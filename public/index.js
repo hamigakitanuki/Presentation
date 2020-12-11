@@ -217,6 +217,7 @@ function syncUser() {
 }
 
 function addUser(addUser) {
+  moveIsActive = false;
   loader.load(
     url,
     function (gltf) {
@@ -255,6 +256,8 @@ function addUser(addUser) {
     function (error) {
     }
   );
+  moveIsActive = true;
+
 }
 
 function usersPositionSet() {
@@ -281,8 +284,10 @@ function usersPositionSet() {
   firebase.database().ref('users').on('child_removed', (removeUser) => {
     let userIndex = userModels.findIndex(({ id }) => id.toString() == removeUser.val().user.id.toString());
     let modelData = userModels[userIndex];
+    moveIsActive = false;
     scene.remove(modelData.model);
     scene.remove(modelData.name);
+    moveIsActive = true;
 
     let message = document.createElement('LI');
     message.innerText = removeUser.val().user.name + " さんが退出しました";
@@ -305,6 +310,7 @@ function initKeyEvent() {
       case 68: // d
         moveRight = true;
         break;
+
     }
   };
 
