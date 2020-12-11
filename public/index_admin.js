@@ -15,6 +15,10 @@ var slide;
 var slideData = getSlideData();
 var img;
 var objectGroup = [];
+var userModels = [];
+var slideNumber = 0;
+var chatCount = 0;
+var moveIsActive = true;
 
 const loader = new GLTFLoader();
 const url = "./NEWOPEN.glb";
@@ -29,9 +33,7 @@ var user = {
   beforeZ: 0,
   beforeRotationY: 0
 }
-var userModels = [];
-var slideNumber = 0;
-var chatCount = 0;
+
 // firebase.database().ref('users/' + user.id).set(user);
 firebase.firestore().collection('presentation').doc('now_presentation').set({ now_id: slideNumber })
 
@@ -190,10 +192,10 @@ function syncUser() {
 }
 
 function addUser(addUser) {
+  moveIsActive = false;
   loader.load(
     url,
     function (gltf) {
-      console.log(addUser);
       //すべてのメッシュ(物体)にcastShadow(影を発生させる設定)を適用する
       gltf.scene.traverse(function (node) {
         if (node.isMesh) {
@@ -229,6 +231,8 @@ function addUser(addUser) {
     function (error) {
     }
   );
+  moveIsActive = true;
+
 }
 
 function usersPositionSet() {
@@ -240,6 +244,7 @@ function usersPositionSet() {
         if (userItem[1].user) {
           addUser(userItem[1].user)
         }
+
       } else {
         let modelData = userModels[userIndex];
         if (modelData) {
@@ -254,8 +259,10 @@ function usersPositionSet() {
   firebase.database().ref('users').on('child_removed', (removeUser) => {
     let userIndex = userModels.findIndex(({ id }) => id.toString() == removeUser.val().user.id.toString());
     let modelData = userModels[userIndex];
+    moveIsActive = false;
     scene.remove(modelData.model);
     scene.remove(modelData.name);
+    moveIsActive = true;
 
     let message = document.createElement('LI');
     message.innerText = removeUser.val().user.name + " さんが退出しました";
@@ -287,11 +294,6 @@ function initKeyEvent() {
 
 function initChatBar() {
 
-  let hiddenChatBar = function (event) {
-    if (event.keyCode === 27) {
-      document.getElementById('chat_bar').style.display = 'none';
-    }
-  }
   let chatKey = function (event) {
     if (event.keyCode === 116 || event.type === 'click') {
       document.getElementById('chat_bar').style.display = 'block';
@@ -302,21 +304,48 @@ function initChatBar() {
   }
   let submitChat = function (event) {
     if (event.keyCode === 13) {
-      firebase.firestore()
-        .collection('chat')
-        .doc(user.id + chatCount.toString())
-        .set({
-          name: user.name,
-          message: document.getElementById('chat_bar').value
+      let inputMessage = document.getElementById('chat_bar').value;
+      if (inputMessage.slice(0, 1) === '@' || inputMessage.slice(0, 1) === '＠') {
+        inputMessage = inputMessage.slice(1)
+        let box = new THREE.Mesh(
+          new THREE.BoxGeometry(100, 100, 100),
+          new THREE.MeshStandardMaterial({
+            map: createTexture({
+              text: inputMessage,
+              fontSize: 100
+            })
+          })
+        );
+        box.position.set(user.x, 100, user.z)
+        scene.add(box)
+        let id = Math.random().toString(32).substring(2)
+        firebase.firestore().collection('message_box').doc(id).set({
+          id: id,
+          x: user.x,
+          z: user.z,
+          message: inputMessage
+        })
+        objectGroup.push({
+          id: id,
+          object: box
         });
-      chatCount++;
-      document.getElementById('chat_bar').value = "";
+        document.getElementById('chat_bar').value = "";
+
+      } else {
+        firebase.firestore()
+          .collection('chat')
+          .doc(user.id + chatCount.toString())
+          .set({
+            name: user.name,
+            message: inputMessage
+          });
+        chatCount++;
+        document.getElementById('chat_bar').value = "";
+      }
     }
   }
 
   window.addEventListener('keypress', chatKey, false);
-  document.getElementById('chat_bar').addEventListener('blur', hiddenChatBar, false);
-  document.getElementById('chat_bar').addEventListener('keydown', hiddenChatBar, false);
   document.getElementById('chat_bar').addEventListener('keypress', submitChat, false);
   document.getElementById('chat_box').addEventListener('click', chatKey)
   firebase.firestore()
@@ -330,7 +359,33 @@ function initChatBar() {
         }
       });
     });
-
+  firebase.firestore()
+    .collection('message_box')
+    .onSnapshot(chatCollection => {
+      chatCollection.docChanges().forEach(change => {
+        let object = change.doc.data();
+        let objectIndex = userModels.findIndex(({ id }) => id.toString() == object.id.toString());
+        if (objectIndex === -1) {
+          moveIsActive = false
+          let box = new THREE.Mesh(
+            new THREE.BoxGeometry(100, 100, 100),
+            new THREE.MeshStandardMaterial({
+              map: createTexture({
+                text: object.message,
+                fontSize: 100
+              })
+            })
+          );
+          box.position.set(object.x, 100, object.z)
+          scene.add(box)
+          objectGroup.push({
+            id: object.id,
+            object: box
+          });
+        }
+        moveIsActive = true
+      });
+    });
 }
 
 function setRandomObjects() {

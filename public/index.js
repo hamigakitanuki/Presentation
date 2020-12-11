@@ -17,6 +17,8 @@ var slideData = getSlideData();
 var img;
 var objectGroup = [];
 var slides = [];
+var userModels = [];
+var chatCount = 0;
 const loader = new GLTFLoader();
 const url = "./NEWOPEN.glb";
 
@@ -30,9 +32,7 @@ var user = {
   beforeZ: 0,
   beforeRotationY: 0
 }
-var userModels = [];
 
-var chatCount = 0;
 firebase.database().ref('users/' + user.id).set(user);
 
 function init() {
