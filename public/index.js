@@ -25,7 +25,7 @@ var user = {
   name: document.getElementById('name').value,
   rotationY: 0,
   x: Math.floor(Math.random() * 1500) % 1500,
-  z: 0,
+  z: Math.floor(Math.random() * 1500) % 1500 + 5000,
   beforeX: 0,
   beforeZ: 0,
   beforeRotationY: 0
@@ -43,7 +43,7 @@ function init() {
 
   renderer.setClearColor(0x3f88ef);
   renderer.shadowMap.enabled = true;
-  camera.position.set(user.x, 200, 2500);
+  camera.position.set(user.x, 200, user.z);
   let meshFloor = new THREE.Mesh(
     new THREE.BoxGeometry(40000, 0.1, 40000),
     new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.5 })
@@ -347,15 +347,44 @@ function initChatBar() {
   }
   let submitChat = function (event) {
     if (event.keyCode === 13) {
-      firebase.firestore()
-        .collection('chat')
-        .doc(user.id + chatCount.toString())
-        .set({
-          name: user.name,
-          message: document.getElementById('chat_bar').value
+      let inputMessage = document.getElementById('chat_bar').value;
+      if (inputMessage.slice(0, 1) === '@' || inputMessage.slice(0, 1) === '＠') {
+        inputMessage = inputMessage.slice(1)
+        let box = new THREE.Mesh(
+          new THREE.BoxGeometry(100, 100, 100),
+          new THREE.MeshStandardMaterial({
+            map: createTexture({
+              text: inputMessage,
+              fontSize: 100
+            })
+          })
+        );
+        box.position.set(user.x, 100, user.z)
+        scene.add(box)
+        let id = Math.random().toString(32).substring(2)
+        firebase.firestore().collection('message_box').doc(id).set({
+          id: id,
+          x: user.x,
+          z: user.z,
+          message: inputMessage
+        })
+        objectGroup.push({
+          id: id,
+          object: box
         });
-      chatCount++;
-      document.getElementById('chat_bar').value = "";
+        document.getElementById('chat_bar').value = "";
+
+      } else {
+        firebase.firestore()
+          .collection('chat')
+          .doc(user.id + chatCount.toString())
+          .set({
+            name: user.name,
+            message: inputMessage
+          });
+        chatCount++;
+        document.getElementById('chat_bar').value = "";
+      }
     }
   }
 
@@ -373,7 +402,33 @@ function initChatBar() {
         }
       });
     });
-
+  firebase.firestore()
+    .collection('message_box')
+    .onSnapshot(chatCollection => {
+      chatCollection.docChanges().forEach(change => {
+        let object = change.doc.data();
+        let objectIndex = userModels.findIndex(({ id }) => id.toString() == object.id.toString());
+        if (objectIndex === -1) {
+          moveIsActive = false
+          let box = new THREE.Mesh(
+            new THREE.BoxGeometry(100, 100, 100),
+            new THREE.MeshStandardMaterial({
+              map: createTexture({
+                text: object.message,
+                fontSize: 100
+              })
+            })
+          );
+          box.position.set(object.x, 100, object.z)
+          scene.add(box)
+          objectGroup.push({
+            id: object.id,
+            object: box
+          });
+        }
+        moveIsActive = true
+      });
+    });
 }
 
 function setRandomObjects() {
