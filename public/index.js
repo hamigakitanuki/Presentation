@@ -33,9 +33,10 @@ var user = {
   beforeRotationY: 0
 }
 
-firebase.database().ref('users/' + user.id).set(user);
 
 function init() {
+  firebase.database().ref('users/' + user.id).set(user);
+
   // 初期化のために実行
   onResize();
   // リサイズイベント発生時に実行
@@ -44,12 +45,11 @@ function init() {
   renderer.setClearColor(0x3f88ef);
   renderer.shadowMap.enabled = true;
   camera.position.set(user.x, 200, user.z);
+
   let meshFloor = new THREE.Mesh(
     new THREE.BoxGeometry(40000, 0.1, 40000),
     new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.5 })
   );
-
-  meshFloor.receiveShadow = true;
   scene.add(meshFloor);
 
   let board = new THREE.Mesh(
@@ -74,7 +74,6 @@ function init() {
       // 縦横比を保って適当にリサイズ
       const w = 5;
       const h = tex.image.height / (tex.image.width / w);
-
       // 平面
       const geometry = new THREE.PlaneGeometry(500, 500);
       const material = new THREE.MeshPhongMaterial({ map: face_img });
@@ -90,7 +89,6 @@ function init() {
       // 縦横比を保って適当にリサイズ
       const w = 5;
       const h = tex.image.height / (tex.image.width / w);
-
       // 平面
       const geometry = new THREE.PlaneGeometry(500, 500);
       const material = new THREE.MeshPhongMaterial({ map: beenos_img });
@@ -258,6 +256,24 @@ function addUser(addUser) {
   );
   moveIsActive = true;
 
+}
+
+function createImageObject(imgName, width, height, x, y, z) {
+  let imgObject;
+  let img = new THREE.TextureLoader().load('beenos.png',
+    (tex) => { // 読み込み完了時
+      // 縦横比を保って適当にリサイズ
+      const w = 5;
+      const h = tex.image.height / (tex.image.width / w);
+      // 平面
+      const geometry = new THREE.PlaneGeometry(500, 500);
+      const material = new THREE.MeshPhongMaterial({ map: img });
+      imgObject = new THREE.Mesh(geometry, material);
+      imgObject.scale.set(w, h, 1);
+      imgObject.rotation.x = (Math.PI / 180) * 1
+      imgObject.position.set(800, 4300, -2930)
+    });
+  return imgObject;
 }
 
 function usersPositionSet() {
@@ -431,6 +447,10 @@ function initChatBar() {
     });
 }
 
+function addImageObject(imgName, width, height, x, y, z) {
+
+}
+
 function setRandomObjects() {
   for (let index = 0; index < 100; index++) {
     let color = { r: 0, g: 0, b: 0 };	// RGB 0～255の値で設定
@@ -501,14 +521,6 @@ function createSlide(strings) {
   return slide_temp
 }
 
-/**
-   * 2D Canvasからテクスチャを作成する
-   * @param {Object} options
-   * @param {stirng} options.text 描画したい文字列
-   * @param {number} options.fontSize フォントサイズ
-   * @return {Object} テクスチャを返す。
-   * @memberof Canvas
-   */
 function createTexture(options) {
   // Canvas要素を作成
   const canvas = document.createElement('canvas');
@@ -539,11 +551,6 @@ function createTexture(options) {
 
   ctx.fillStyle = 'rgba(0, 0, 0, 1.0)';
   ctx.fillText(options.text, 0, options.fontSize * 0.2);
-
-  // ↓canvasの文字を確認したいとき。テキストを描画したcanvasをbodyに追加しているだけです。
-  // document.body.appendChild(canvas);
-  // canvas.style.backgroundColor = '#933';
-  // canvas.style.position = 'relative';
 
   // テクスチャを作成
   const texture = new THREE.CanvasTexture(canvas);
