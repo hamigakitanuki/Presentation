@@ -28,7 +28,27 @@
       </ul>
     </div>
     <input type="text" id="chat_bar">
-
+    <div class="help">
+      <div class="help_item">
+        <h3>移動方法</h3>
+        <span>W:前</span>
+        <span>A:左</span>
+        <span>S:後</span>
+        <span>D:右</span>
+      </div>
+      <div class="help_item">
+        <h3>チャット</h3>
+        <span>
+          T:チャット <br>
+          ※クリックでもできます
+        </span>
+      </div>
+      <div class="help_item">
+        <h3>開始と終了</h3>
+        <span>画面をクリック：動けるようになります</span><br>
+        <span>esc：マウスカーソルに戻ります。</span>
+      </div>
+    </div>
   </div>
   <input type="hidden" id="userId">
   <input type="hidden" id="name">
@@ -43,14 +63,28 @@
   }
 
   #chat_bar {
-    position: absolute;
     bottom: 0;
     width: 100%;
     font-size: 24px;
-    display: none;
     background-color: gray;
     color: white;
     opacity: 0.8;
+  }
+
+  h3 {
+    padding: 0;
+    margin: 0;
+  }
+
+  .help {
+    margin-top: 0.5rem;
+    padding: 0 1rem;
+    font-size: 14px;
+    border-top: 1px solid #fff;
+  }
+
+  .help_item {
+    margin-top: 0.5rem;
   }
 
   .chat_messages {

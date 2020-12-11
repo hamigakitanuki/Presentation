@@ -264,11 +264,6 @@ function initKeyEvent() {
 
 function initChatBar() {
 
-  let hiddenChatBar = function (event) {
-    if (event.keyCode === 27) {
-      document.getElementById('chat_bar').style.display = 'none';
-    }
-  }
   let chatKey = function (event) {
     if (event.keyCode === 116 || event.type === 'click') {
       document.getElementById('chat_bar').style.display = 'block';
@@ -292,8 +287,6 @@ function initChatBar() {
   }
 
   window.addEventListener('keypress', chatKey, false);
-  document.getElementById('chat_bar').addEventListener('blur', hiddenChatBar, false);
-  document.getElementById('chat_bar').addEventListener('keydown', hiddenChatBar, false);
   document.getElementById('chat_bar').addEventListener('keypress', submitChat, false);
   document.getElementById('chat_box').addEventListener('click', chatKey)
   firebase.firestore()
@@ -326,7 +319,7 @@ function setRandomObjects() {
     let positionZ = Math.floor(Math.random() * 15000);
     positionX = Math.floor(Math.random() * 2 + 1) == 1 ? positionX * (-1) : positionX;
     positionZ = Math.floor(Math.random() * 2 + 1) == 1 ? positionZ * (-1) : positionZ;
-    object.position.set(positionX, 5000 + positionY, positionZ);
+    object.position.set(positionX, 6000 + positionY, positionZ);
     scene.add(object)
   }
 }

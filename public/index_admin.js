@@ -305,7 +305,7 @@ function setRandomObjects() {
     let positionZ = Math.floor(Math.random() * 15000);
     positionX = Math.floor(Math.random() * 2 + 1) == 1 ? positionX * (-1) : positionX;
     positionZ = Math.floor(Math.random() * 2 + 1) == 1 ? positionZ * (-1) : positionZ;
-    object.position.set(positionX, 5000 + positionY, positionZ);
+    object.position.set(positionX, 6000 + positionY, positionZ);
     scene.add(object)
   }
 }
