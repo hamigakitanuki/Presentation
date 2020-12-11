@@ -4,6 +4,7 @@ const scene = new THREE.Scene();  //シーンを作成
 const camera = new THREE.PerspectiveCamera(90, 800 / 800, 1, 100000);  //カメラを作成
 const renderer = new THREE.WebGLRenderer({ canvas: document.querySelector("#myCanvas") }); //レンダラーを作成
 const controls = new THREE.PointerLockControls(camera, renderer.domElement);
+let moveIsActive = true;
 let moveForward = false;
 let moveBackward = false;
 let moveLeft = false;
@@ -15,7 +16,7 @@ var slide;
 var slideData = getSlideData();
 var img;
 var objectGroup = [];
-
+var slides = [];
 const loader = new GLTFLoader();
 const url = "./NEWOPEN.glb";
 
@@ -52,10 +53,10 @@ function init() {
   scene.add(meshFloor);
 
   let board = new THREE.Mesh(
-    new THREE.BoxGeometry(10000, 10, 5000),
+    new THREE.BoxGeometry(10000, 100, 5000),
     new THREE.MeshStandardMaterial({ color: 0xfafafa })
   )
-  board.rotation.x = 1.5
+  board.rotation.x = (Math.PI / 180) * 90
   board.position.set(0, 2500, -3000);
   scene.add(board)
 
@@ -64,9 +65,64 @@ function init() {
     new THREE.BoxGeometry(10500, 100, 5700),
     new THREE.MeshStandardMaterial({ color: 0x6699FF })
   )
-  boardWrap.rotation.x = 1.5
+  boardWrap.rotation.x = (Math.PI / 180) * 90
   boardWrap.position.set(0, 2500, -3100);
   scene.add(boardWrap)
+
+  let face_img = new THREE.TextureLoader().load('img_face.jpg',
+    (tex) => { // 読み込み完了時
+      // 縦横比を保って適当にリサイズ
+      const w = 5;
+      const h = tex.image.height / (tex.image.width / w);
+
+      // 平面
+      const geometry = new THREE.PlaneGeometry(500, 500);
+      const material = new THREE.MeshPhongMaterial({ map: face_img });
+      img = new THREE.Mesh(geometry, material);
+      img.scale.set(w, h, 1);
+      img.position.set(2500, 1600, -2920)
+      scene.add(img);
+      img.visible = false;
+    });
+
+  let beenos_img = new THREE.TextureLoader().load('beenos.png',
+    (tex) => { // 読み込み完了時
+      // 縦横比を保って適当にリサイズ
+      const w = 5;
+      const h = tex.image.height / (tex.image.width / w);
+
+      // 平面
+      const geometry = new THREE.PlaneGeometry(500, 500);
+      const material = new THREE.MeshPhongMaterial({ map: beenos_img });
+      const plane = new THREE.Mesh(geometry, material);
+      plane.scale.set(w, h, 1);
+      plane.rotation.x = (Math.PI / 180) * 1
+      plane.position.set(800, 4300, -2930)
+      scene.add(plane);
+    });
+
+  let links_img = new THREE.TextureLoader().load('links.png',
+    (tex) => { // 読み込み完了時
+      // 縦横比を保って適当にリサイズ
+      const w = 5;
+      const h = tex.image.height / (tex.image.width / w);
+
+      // 平面
+      const geometry = new THREE.PlaneGeometry(300, 300);
+      const material = new THREE.MeshPhongMaterial({ map: links_img });
+      const plane = new THREE.Mesh(geometry, material);
+      plane.scale.set(w, h, 1);
+      plane.rotation.x = (Math.PI / 180) * 1
+      plane.position.set(3100, 4300, -2930)
+      scene.add(plane);
+    });
+
+  for (let index = 0; index < slideData.length; index++) {
+    slide = createSlide(slideData[index])
+    scene.add(slide)
+    slide.visible = false
+    slides.push(slide);
+  }
 
   let stage = new THREE.Mesh(
     new THREE.BoxGeometry(3000, 300, 1500),
@@ -102,6 +158,7 @@ function init() {
   syncUser();
   tick();
   usersPositionSet();
+
   function tick() {
     requestAnimationFrame(tick);
     move();
@@ -112,7 +169,7 @@ function init() {
 
 function move() {
   let time = performance.now();
-  if (controls.isLocked === true) { //マウスのポインタがロックされているときのみ有効
+  if (controls.isLocked === true && moveIsActive === true) { //マウスのポインタがロックされているときのみ有効
     let delta = (time - prevTime) / 250;
 
     //速度を減衰させる
@@ -163,7 +220,6 @@ function addUser(addUser) {
   loader.load(
     url,
     function (gltf) {
-      console.log(addUser);
       //すべてのメッシュ(物体)にcastShadow(影を発生させる設定)を適用する
       gltf.scene.traverse(function (node) {
         if (node.isMesh) {
@@ -189,6 +245,10 @@ function addUser(addUser) {
       name.position.set(addUser.x, 300, addUser.z + 70)
       scene.add(name);
 
+      let message = document.createElement('LI');
+      message.innerText = addUser.name + " さんが参加しました";
+      document.getElementById('message_list').appendChild(message);
+
       userModels.push({ id: addUser.id, model: model, name: name })
 
     },
@@ -203,7 +263,9 @@ function usersPositionSet() {
 
       let userIndex = userModels.findIndex(({ id }) => id.toString() == userItem[0].toString());
       if (userIndex === -1 && userItem[0].toString() != user.id.toString()) {
-        addUser(userItem[1].user)
+        if (userItem[1].user) {
+          addUser(userItem[1].user)
+        }
 
       } else {
         let modelData = userModels[userIndex];
@@ -217,9 +279,14 @@ function usersPositionSet() {
     });
   });
   firebase.database().ref('users').on('child_removed', (removeUser) => {
-    let userIndex = userModels.findIndex(({ id }) => id.toString() == removeUser.user.id.toString());
+    let userIndex = userModels.findIndex(({ id }) => id.toString() == removeUser.val().user.id.toString());
     let modelData = userModels[userIndex];
     scene.remove(modelData.model);
+    scene.remove(modelData.name);
+
+    let message = document.createElement('LI');
+    message.innerText = removeUser.val().user.name + " さんが退出しました";
+    document.getElementById('message_list').appendChild(message);
   });
 }
 
@@ -330,34 +397,25 @@ function slideNumberReceive() {
     .collection('presentation')
     .doc('now_presentation')
     .onSnapshot(doc_snapshot => {
-      scene.remove(slide);
-      slide = createSlide(slideData[doc_snapshot.data().now_id])
-      scene.add(slide)
+      for (let index = 0; index < slides.length; index++) {
+        slides[index].visible = false;
 
-    }, err => {
-      console.log(`Encountered error: ${err}`);
-    });
+      }
+      slides[doc_snapshot.data().now_id].visible = true;
+      switch (doc_snapshot.data().now_id) {
+        case 1:
+          img.visible = true;
 
-  firebase.firestore()
-    .collection('presentation')
-    .doc('img')
-    .onSnapshot(doc_snapshot => {
-      if (doc_snapshot.data()) {
-        img = new THREE.Mesh(
-          new THREE.PlaneGeometry(5000, 5000),
-          new THREE.MeshStandardMaterial({
-            map: new THREE.TextureLoader().load('img_face.jpg')
-          })
-        )
-        img.position.set(0, 2500, -2700);
-        scene.add(img)
-      } else {
-        scene.remove(img)
+          break;
+        default:
+          img.visible = false;
+          break
       }
 
     }, err => {
       console.log(`Encountered error: ${err}`);
     });
+
 }
 
 function createSlide(strings) {
@@ -374,7 +432,7 @@ function createSlide(strings) {
         })
       })
     )
-    text.position.set(-((9000 - text_width) / 2), 4000 - 250 * index, -2800);
+    text.position.set(-((9000 - text_width) / 2), 4000 - 250 * index, -2900);
 
     slide_temp.add(text);
   }

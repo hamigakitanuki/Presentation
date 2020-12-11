@@ -1,6 +1,9 @@
 function getSlideData() {
     return [
         [
+            "成果発表!"
+        ],
+        [
             "自己紹介",
             "　",
             "柿崎 和樹 (Kakizaki Kazuki)",

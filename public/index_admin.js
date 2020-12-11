@@ -24,7 +24,7 @@ var user = {
   name: document.getElementById('name').value,
   rotationY: 0,
   x: Math.floor(Math.random() * 1500) % 1500,
-  z: 0,
+  z: 2500,
   beforeX: 0,
   beforeZ: 0,
   beforeRotationY: 0
@@ -33,6 +33,7 @@ var userModels = [];
 var slideNumber = 0;
 var chatCount = 0;
 // firebase.database().ref('users/' + user.id).set(user);
+firebase.firestore().collection('presentation').doc('now_presentation').set({ now_id: slideNumber })
 
 function init() {
   // 初期化のために実行
@@ -52,10 +53,10 @@ function init() {
   scene.add(meshFloor);
 
   let board = new THREE.Mesh(
-    new THREE.BoxGeometry(10000, 10, 5000),
+    new THREE.BoxGeometry(10000, 100, 5000),
     new THREE.MeshStandardMaterial({ color: 0xfafafa })
   )
-  board.rotation.x = 1.5
+  board.rotation.x = (Math.PI / 180) * 90
   board.position.set(0, 2500, -3000);
   scene.add(board)
 
@@ -64,9 +65,42 @@ function init() {
     new THREE.BoxGeometry(10500, 100, 5700),
     new THREE.MeshStandardMaterial({ color: 0x6699FF })
   )
-  boardWrap.rotation.x = 1.5
+  boardWrap.rotation.x = (Math.PI / 180) * 90
   boardWrap.position.set(0, 2500, -3100);
   scene.add(boardWrap)
+
+  let beenos_img = new THREE.TextureLoader().load('beenos.png',
+    (tex) => { // 読み込み完了時
+      // 縦横比を保って適当にリサイズ
+      const w = 5;
+      const h = tex.image.height / (tex.image.width / w);
+
+      // 平面
+      const geometry = new THREE.PlaneGeometry(500, 500);
+      const material = new THREE.MeshPhongMaterial({ map: beenos_img });
+      const plane = new THREE.Mesh(geometry, material);
+      plane.scale.set(w, h, 1);
+      plane.rotation.x = (Math.PI / 180) * 1
+      plane.position.set(800, 4300, -2930)
+      scene.add(plane);
+    });
+
+  let links_img = new THREE.TextureLoader().load('links.png',
+    (tex) => { // 読み込み完了時
+      // 縦横比を保って適当にリサイズ
+      const w = 5;
+      const h = tex.image.height / (tex.image.width / w);
+
+      // 平面
+      const geometry = new THREE.PlaneGeometry(300, 300);
+      const material = new THREE.MeshPhongMaterial({ map: links_img });
+      const plane = new THREE.Mesh(geometry, material);
+      plane.scale.set(w, h, 1);
+      plane.rotation.x = (Math.PI / 180) * 1
+      plane.position.set(3100, 4300, -2930)
+      scene.add(plane);
+    });
+
 
   let stage = new THREE.Mesh(
     new THREE.BoxGeometry(3000, 300, 1500),
@@ -185,6 +219,10 @@ function addUser(addUser) {
       name.position.set(addUser.x, 300, addUser.z + 70)
       scene.add(name);
 
+      let message = document.createElement('LI');
+      message.innerText = addUser.name + " さんが参加しました";
+      document.getElementById('message_list').appendChild(message);
+
       userModels.push({ id: addUser.id, model: model, name: name })
 
     },
@@ -199,8 +237,9 @@ function usersPositionSet() {
 
       let userIndex = userModels.findIndex(({ id }) => id.toString() == userItem[0].toString());
       if (userIndex === -1 && userItem[0].toString() != user.id.toString()) {
-        addUser(userItem[1].user)
-
+        if (userItem[1].user) {
+          addUser(userItem[1].user)
+        }
       } else {
         let modelData = userModels[userIndex];
         if (modelData) {
@@ -213,9 +252,14 @@ function usersPositionSet() {
     });
   });
   firebase.database().ref('users').on('child_removed', (removeUser) => {
-    let userIndex = userModels.findIndex(({ id }) => id.toString() == removeUser.user.id.toString());
+    let userIndex = userModels.findIndex(({ id }) => id.toString() == removeUser.val().user.id.toString());
     let modelData = userModels[userIndex];
     scene.remove(modelData.model);
+    scene.remove(modelData.name);
+
+    let message = document.createElement('LI');
+    message.innerText = removeUser.val().user.name + " さんが退出しました";
+    document.getElementById('message_list').appendChild(message);
   });
 }
 
@@ -320,27 +364,27 @@ function slideNumberReceive() {
       slide = createSlide(slideData[doc_snapshot.data().now_id])
       scene.add(slide)
 
-    }, err => {
-      console.log(`Encountered error: ${err}`);
-    });
+      switch (doc_snapshot.data().now_id) {
+        case 1:
+          let face_img = new THREE.TextureLoader().load('img_face.jpg',
+            (tex) => { // 読み込み完了時
+              // 縦横比を保って適当にリサイズ
+              const w = 5;
+              const h = tex.image.height / (tex.image.width / w);
 
-  firebase.firestore()
-    .collection('presentation')
-    .doc('img')
-    .onSnapshot(doc_snapshot => {
-      if (doc_snapshot.data()) {
-        img = new THREE.Mesh(
-          new THREE.PlaneGeometry(5000, 5000),
-          new THREE.MeshStandardMaterial({
-            map: new THREE.TextureLoader().load('img_face.jpg')
-          })
-        )
-        img.position.set(0, 2500, -2700);
-        scene.add(img)
-      } else {
-        scene.remove(img)
+              // 平面
+              const geometry = new THREE.PlaneGeometry(500, 500);
+              const material = new THREE.MeshPhongMaterial({ map: face_img });
+              const plane = new THREE.Mesh(geometry, material);
+              plane.scale.set(w, h, 1);
+              plane.position.set(2500, 1600, -2920)
+              scene.add(plane);
+            });
+
+          break;
+        default:
+          break
       }
-
     }, err => {
       console.log(`Encountered error: ${err}`);
     });
@@ -360,9 +404,10 @@ function createSlide(strings) {
         })
       })
     )
-    text.position.set(-((9000 - text_width) / 2), 4000 - 250 * index, -2800);
+    text.position.set(-((9000 - text_width) / 2), 4000 - 250 * index, -2900);
 
     slide_temp.add(text);
+
   }
 
   return slide_temp
