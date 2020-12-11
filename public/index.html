@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>プレゼンテーション 柿崎</title>
+
+  <script defer src="/__/firebase/8.1.2/firebase-app.js"></script>
+  <script defer src="/__/firebase/8.1.2/firebase-firestore.js"></script>
+  <script defer src="/__/firebase/8.1.2/firebase-functions.js"></script>
+  <script defer src="/__/firebase/8.1.2/firebase-database.js"></script>
+  <script defer src="/__/firebase/init.js?useEmulator=true"></script>
+
+  <script src="three.js"></script>
+  <script src="PointerLockControls.js"></script>
+  <script src="data.js"></script>
+  <script type="module" src="createUser.js"></script>
+  <script type="module" src="base.js"></script>
+  <script type="module" src="index.js"></script>
+</head>
+
+<body>
+  <canvas id="myCanvas">
+  </canvas>
+  <div class="chat_messages" id="chat_box">
+    <div class="chat_messages_inner">
+      <ul id="message_list">
+      </ul>
+    </div>
+    <input type="text" id="chat_bar">
+
+  </div>
+  <input type="hidden" id="userId">
+  <input type="hidden" id="name">
+</body>
+
+</html>
+
+<style>
+  body {
+    margin: 0;
+    overflow: hidden;
+  }
+
+  #chat_bar {
+    position: absolute;
+    bottom: 0;
+    width: 100%;
+    font-size: 24px;
+    display: none;
+    background-color: gray;
+    color: white;
+    opacity: 0.8;
+  }
+
+  .chat_messages {
+    position: fixed;
+    right: 0;
+    top: 5%;
+    padding-bottom: 2rem;
+    background-color: gray;
+    color: white;
+    border-radius: 4px;
+    opacity: 0.8;
+  }
+
+  .chat_messages_inner {
+    width: 300px;
+    height: 500px;
+    overflow-y: scroll;
+  }
+
+  .chat_messages ul {
+    list-style-type: none;
+    padding: 0px 1rem;
+  }
+</style>
